@@ -211,7 +211,7 @@ For production deployments:
 
 ## Lobby Management
 
-Lobbies provide matchmaking functionality, allowing players to discover and join game sessions. All lobby operations require prior authentication.
+Lobbies provide matchmaking functionality, allowing players to create, find, and join game sessions. All lobby operations require prior authentication.
 
 ### Creating Lobbies
 
