@@ -117,7 +117,7 @@ The `EOSGameStarter` script in the Examples folder demonstrates how to:
 - Verify P2P networking is enabled in your client policy
 - Check firewall settings aren't blocking EOS connections
 
-## Support
+## Help
 
 For issues related to the EOS C# SDK or Unity plugin itself, please open an issue on the [EOS Plugin for Unity repository](https://github.com/EOS-Contrib/eos_plugin_for_unity).
 
