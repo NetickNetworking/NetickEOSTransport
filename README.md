@@ -12,7 +12,7 @@ A transport integration for [Netick](https://github.com/NetickNetworking/NetickF
 
 This package requires the following to be installed manually:
 
-1. **[EOS Plugin for Unity](https://github.com/EOS-Contrib/eos_plugin_for_unity_upm)** - Epic Online Services Unity integration
+1. **[EOS Plugin for Unity](https://github.com/EOS-Contrib/eos_plugin_for_unity_upm)**
 2. **[Netick for Unity](https://github.com/NetickNetworking/NetickForUnity)**
 
 ### Installation Order
