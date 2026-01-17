@@ -4,7 +4,7 @@ A transport integration for [Netick](https://github.com/NetickNetworking/NetickF
 
 ## Features
 
-- EOS P2P relay networking (cross-platform and free relay)
+- EOS P2P relay networking (free cross-platform relay)
 - Lobby creation and discovery through EOS
 - NAT punchthrough and relay fallback
 
