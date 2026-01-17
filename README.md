@@ -8,20 +8,15 @@ An Epic Online Services (EOS) integration for Netick, featuring support for rela
 - Lobby creation and discovery through EOS
 - NAT punchthrough and relay fallback
 
-## Dependencies
+## Installation
 
-This package requires the following to be installed manually:
+This package and its dependencies can be installed via Unity Package Manager using Git URLs.
 
-1. **[EOS Plugin for Unity](https://github.com/EOS-Contrib/eos_plugin_for_unity_upm)**
-2. **[Netick for Unity](https://github.com/NetickNetworking/NetickForUnity)**
+**Dependencies:**
+- **[EOS Plugin for Unity](https://github.com/EOS-Contrib/eos_plugin_for_unity_upm)**
+- **[Netick for Unity](https://github.com/NetickNetworking/NetickForUnity)**
 
-### Installation Order
-
-1. Install the EOS Plugin for Unity first
-2. Install Netick for Unity
-3. Install this package
-
-### Installing Packages from Git
+### Installing from Git
 
 All dependencies can be installed via Unity Package Manager using Git URLs. For detailed instructions on installing packages from Git repositories, see the [Unity documentation on installing from a Git URL](https://docs.unity3d.com/6000.2/Documentation/Manual/upm-ui-giturl.html).
 
@@ -30,10 +25,11 @@ All dependencies can be installed via Unity Package Manager using Git URLs. For 
 1. Open Unity Package Manager (Window > Package Manager)
 2. Click the **+** button in the top-left corner
 3. Select **Add package from git URL...**
-4. Enter the Git URL for each package:
-   - EOS Plugin: `https://github.com/EOS-Contrib/eos_plugin_for_unity_upm.git`
-   - Netick for Unity: `https://github.com/NetickNetworking/NetickForUnity.git`
-5. Click **Add**
+4. Add the following packages in order:
+   - First, add EOS Plugin: `https://github.com/EOS-Contrib/eos_plugin_for_unity_upm.git`
+   - Then, add Netick for Unity: `https://github.com/NetickNetworking/NetickForUnity.git`
+   - Finally, add this package: `https://github.com/NetickNetworking/NetickEOSTransport.git`
+5. Click **Add** for each package
 
 ## Epic Online Services Setup
 
