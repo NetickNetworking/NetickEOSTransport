@@ -147,6 +147,80 @@ lobbyManager.JoinLobby(lobbyId, lobbyDetails, true, (result) =>
 
 **Important**: The connection string passed to `client.Connect()` must be the **lobby owner's ProductUserId** (converted to string). This is how the EOS transport identifies which peer to establish a P2P connection with. The lobby owner's ID is automatically available through `lobby.LobbyOwner` after successfully joining a lobby.
 
+## Authentication
+
+EOS provides two main authentication flows:
+
+### 1. Device ID Authentication
+
+Device ID creates a hardware-tied persistent identity without requiring an Epic Games account. This is the simplest method for testing and works well for mobile or standalone applications.
+
+**Pros:**
+- No Epic Games account required
+- Automatic and seamless for users
+- Good for prototyping and testing
+
+**Cons:**
+- Tied to specific hardware
+- Cannot be transferred between devices
+- Limited cross-platform support
+
+**Implementation:**
+```csharp
+EOSManager.Instance.StartConnectLoginWithDeviceToken("User", (connectInfo) =>
+{
+    if (connectInfo.ResultCode == Result.Success)
+    {
+        // Successfully authenticated
+    }
+});
+```
+
+### 2. Epic Account Authentication
+
+Epic Account authentication uses Epic Games accounts and supports multiple credential types:
+
+**Available Credential Types:**
+- **Developer (DevAuthTool)**: For local development and testing. Requires the DevAuthTool running locally.
+- **AccountPortal**: Opens a browser for user login with their Epic Games account.
+- **ExchangeCode**: Uses a one-time exchange code (typically from Epic Games Launcher).
+- **PersistentAuth**: Uses cached credentials from a previous login.
+- **Password**: Direct username/password login (requires special permissions).
+- **ExternalAuth**: Login via external platforms (Steam, PlayStation, Xbox, etc.).
+
+**Implementation Example (Developer/DevAuthTool):**
+```csharp
+var credentials = new Epic.OnlineServices.Auth.Credentials 
+{ 
+    Type = Epic.OnlineServices.Auth.LoginCredentialType.Developer,
+    Id = "localhost:8888",  // DevAuthTool address
+    Token = "YourDevUsername"  // Username from DevAuthTool
+};
+
+var loginOptions = new Epic.OnlineServices.Auth.LoginOptions()
+{
+    Credentials = credentials,
+    ScopeFlags = Epic.OnlineServices.Auth.AuthScopeFlags.BasicProfile
+};
+
+EOSManager.Instance.GetEOSAuthInterface().Login(ref loginOptions, null, (authCallback) =>
+{
+    if (authCallback.ResultCode == Result.Success)
+    {
+        // After Epic Account auth, connect to EOS
+        EOSManager.Instance.StartConnectLoginWithEpicAccount(authCallback.LocalUserId, (connectInfo) =>
+        {
+            if (connectInfo.ResultCode == Result.Success)
+            {
+                // Successfully authenticated and connected
+            }
+        });
+    }
+});
+```
+
+**Note**: Epic Account authentication is a two-step process: first authenticate with Epic Account Services, then connect to EOS with the resulting credentials.
+
 ### Local Testing with Multiple Instances
 
 **Important**: EOS does not allow multiple logins using the same account or Device ID. To test locally with multiple game instances, you must use different authentication methods for each instance:
@@ -158,10 +232,17 @@ lobbyManager.JoinLobby(lobbyId, lobbyDetails, true, (result) =>
 **Setting Up DevAuthTool:**
 1. Download the DevAuthTool from the [Epic Online Services documentation](https://dev.epicgames.com/docs/epic-account-services/developer-authentication-tool)
 2. Run the tool and login with your Epic Games account
-3. Copy the credentials provided (they will look like: `localhost:8888` with a username)
-4. Use these credentials in your second game instance for Epic Account authentication
+3. The tool will display credentials (e.g., `localhost:8888` with a username)
+4. In your second game instance, select Developer login type and enter:
+   - **ID/Address**: The address shown by DevAuthTool (e.g., `localhost:8888`)
+   - **Token**: Your chosen username from DevAuthTool
 
 This allows you to run two instances on the same machine with different EOS identities, enabling proper local multiplayer testing.
+
+**Production Considerations:**
+- For production builds, use **AccountPortal** or **ExternalAuth** for the best user experience
+- Device ID is suitable for mobile games or applications where Epic accounts aren't required
+- Developer authentication should only be used during development
 
 ## Important Notes
 
