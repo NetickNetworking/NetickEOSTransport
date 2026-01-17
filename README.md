@@ -120,7 +120,7 @@ lobbyManager.CreateLobby(newLobby, (result) =>
 {
     if (result == Result.Success)
     {
-        // Start Netick as host - no connection string needed
+        // Start Netick as host
         Network.StartAsHost(EOSTransportProvider, default, SandboxPrefab);
     }
 });
