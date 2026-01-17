@@ -1,6 +1,6 @@
 # Netick EOS Transport
 
-A transport integration for [Netick](https://github.com/NetickNetworking/NetickForUnity) that enables networking through Epic Online Services (EOS) relay servers and lobbies.
+A Netick transport for Epic Online Services (EOS) featuring support for relays and lobbies. Built on [EOS Plugin for Unity](https://github.com/EOS-Contrib/eos_plugin_for_unity_upm) - refer to its documentation to integrate additional EOS services.
 
 ## Features
 
