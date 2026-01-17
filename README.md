@@ -4,7 +4,7 @@ An Epic Online Services (EOS) integration for Netick, featuring support for rela
 
 ## Features
 
-- EOS P2P relay networking (free cross-platform relay)
+- EOS relay networking (free cross-platform relay)
 - Lobby creation and discovery through EOS
 - NAT punchthrough and relay fallback
 
@@ -93,78 +93,141 @@ Create a GameObject to manage EOS:
 
 **Important**: The `EOSManager` component must be in your scene for EOS to initialize properly. The `EOSGameStarter` is optional and serves as a reference implementation for how to use the transport.
 
-## Usage Example
+## Getting Started with EOSGameStarter
 
-The `EOSGameStarter` script in the Examples folder demonstrates how to:
+The `EOSGameStarter` component provides a complete reference implementation demonstrating the typical workflow for using this transport. It handles the entire process from authentication through lobby management to establishing Netick connections.
 
-- Initialize and login to EOS
-- Create lobbies
-- Search for and join existing lobbies
-- Handle connection events and errors
+### What EOSGameStarter Demonstrates
 
-### Basic Flow
+The example script shows the complete integration flow:
 
-1. **Login**: Authenticate with EOS using your chosen method
-2. **Create/Find Lobby**: Either create a new lobby or search for existing ones
-3. **Start Netick**: Initialize Netick with the EOS transport
-4. **Connect**: Join the lobby and connect to host
+1. **Authentication**: How to log in using either Device ID or Epic Account credentials
+2. **Lobby Creation**: Creating and configuring lobbies with custom attributes
+3. **Lobby Discovery**: Searching for and listing available lobbies
+4. **Joining Lobbies**: Connecting to existing lobbies found through search
+5. **Netick Integration**: Starting Netick as host or client and establishing connections
 
-### How Connection Works
+### Using the Example
 
-When using the EOS transport with Netick, the connection process works as follows:
+To test the transport using `EOSGameStarter`:
 
-**Host:**
+1. Add the component to your EOS GameObject (alongside `EOSManager`)
+2. Assign your `EOSTransportProvider` asset to the Transport field
+3. Configure your preferred authentication method in the Inspector
+4. Enter Play mode and use the provided UI to:
+   - Log in with your chosen authentication method
+   - Create a new lobby or search for existing lobbies
+   - Join a lobby and establish a connection
+
+The script provides a functional starting point that you can reference when implementing your own lobby and matchmaking systems.
+
+## Authentication
+
+EOS provides two main authentication flows:
+
+### Device ID Authentication
+
+Device ID authentication creates a hardware-tied persistent identity without requiring an Epic Games account. This method is ideal for testing and works well for mobile or standalone applications where Epic account integration is not required.
+
 ```csharp
-// Create a lobby through EOS
-lobbyManager.CreateLobby(newLobby, (result) =>
+EOSManager.Instance.StartConnectLoginWithDeviceToken("User", (connectInfo) =>
 {
-    if (result == Result.Success)
+    if (connectInfo.ResultCode == Result.Success)
     {
-        // Start Netick as host
-        Network.StartAsHost(EOSTransportProvider, default, SandboxPrefab);
+        // Successfully authenticated
     }
 });
 ```
 
-**Note**: In this example, the host starts immediately after lobby creation. However, this is not required - you can create a lobby and start the host later based on your game's needs. For example, you might want to wait for a certain number of players to join, or allow the lobby owner to manually start the game session. The lobby and Netick host are separate systems that you control independently.
+### Epic Account Authentication
 
-**Client:**
+Epic Account authentication integrates with Epic Games accounts and supports multiple credential types for different deployment scenarios:
+
+**Credential Types:**
+- **Developer**: Uses the DevAuthTool for local development and testing
+- **AccountPortal**: Opens a browser for user login with Epic Games credentials
+- **ExchangeCode**: Authenticates using a one-time exchange code
+- **PersistentAuth**: Uses cached credentials from previous sessions
+- **Password**: Direct username/password authentication (requires special permissions)
+- **ExternalAuth**: Integrates with external platforms (Steam, PlayStation, Xbox, etc.)
+
+**Implementation:**
 ```csharp
-// Join the lobby through EOS
-lobbyManager.JoinLobby(lobbyId, lobbyDetails, true, (result) =>
+var credentials = new Epic.OnlineServices.Auth.Credentials 
+{ 
+    Type = Epic.OnlineServices.Auth.LoginCredentialType.Developer,
+    Id = "localhost:8888",
+    Token = "YourDevUsername"
+};
+
+var loginOptions = new Epic.OnlineServices.Auth.LoginOptions()
 {
-    if (result == Result.Success)
+    Credentials = credentials,
+    ScopeFlags = Epic.OnlineServices.Auth.AuthScopeFlags.BasicProfile
+};
+
+EOSManager.Instance.GetEOSAuthInterface().Login(ref loginOptions, null, (authCallback) =>
+{
+    if (authCallback.ResultCode == Result.Success)
     {
-        // Start Netick as client
-        var client = Network.StartAsClient(EOSTransportProvider, default, SandboxPrefab);
-        
-        // Connect using the lobby owner's ProductUserId as the connection string
-        string hostId = lobbyManager.GetCurrentLobby().LobbyOwner.ToString();
-        client.Connect(default, hostId);
+        EOSManager.Instance.StartConnectLoginWithEpicAccount(authCallback.LocalUserId, (connectInfo) =>
+        {
+            if (connectInfo.ResultCode == Result.Success)
+            {
+                // Successfully authenticated
+            }
+        });
     }
 });
 ```
 
-**Important**: The connection string passed to `client.Connect()` must be the **lobby owner's ProductUserId** (converted to string). This is how the EOS transport identifies which peer to establish a P2P connection with. The lobby owner's ID is automatically available through `lobby.LobbyOwner` after successfully joining a lobby.
+**Note**: Epic Account authentication requires two steps: first authenticate with Epic Account Services, then connect to EOS using the resulting credentials.
+
+### Local Testing with Multiple Instances
+
+EOS does not permit multiple simultaneous logins using identical credentials or Device IDs. For local testing with multiple Unity instances, use different authentication methods for each instance:
+
+**Recommended Configuration:**
+- **Instance 1 (Host)**: Device ID authentication
+- **Instance 2 (Client)**: Epic Account authentication with DevAuthTool
+
+**DevAuthTool Setup:**
+1. Download DevAuthTool from the [Epic Online Services documentation](https://dev.epicgames.com/docs/epic-account-services/developer-authentication-tool)
+2. Launch the tool and authenticate with your Epic Games account
+3. Note the displayed credentials (typically `localhost:8888` with a username)
+4. Configure your second instance with:
+   - **Credential Type**: Developer
+   - **ID**: Address from DevAuthTool (e.g., `localhost:8888`)
+   - **Token**: Username from DevAuthTool
+
+This configuration enables proper local multiplayer testing with distinct EOS identities on a single machine.
+
+### Authentication for Production
+
+For production deployments:
+- Use **AccountPortal** or **ExternalAuth** for optimal user experience
+- Reserve **Device ID** for mobile applications or games not requiring Epic accounts
+- Restrict **Developer** authentication to development environments only
 
 ## Lobby Management
 
+Lobbies provide matchmaking functionality, allowing players to discover and join game sessions. All lobby operations require prior authentication.
+
 ### Creating Lobbies
 
-To create a lobby, configure a `Lobby` object with your desired settings and use the `EOSLobbyManager`:
+Configure and create lobbies using the `EOSLobbyManager`:
 
 ```csharp
 Lobby newLobby = new Lobby
 {
     MaxNumLobbyMembers = 4,
     LobbyPermissionLevel = LobbyPermissionLevel.Publicadvertised,
-    BucketId = "DefaultBucket", // Used for filtering lobbies
+    BucketId = "DefaultBucket",
     PresenceEnabled = true,
     RTCRoomEnabled = false,
     AllowInvites = true
 };
 
-// Add custom attributes for filtering and display
 newLobby.Attributes.Add(new LobbyAttribute 
 { 
     Key = "LOBBYNAME", 
@@ -181,29 +244,26 @@ lobbyManager.CreateLobby(newLobby, (result) =>
 });
 ```
 
-**Key Settings:**
-- **MaxNumLobbyMembers**: Maximum number of players allowed
-- **LobbyPermissionLevel**: Controls who can see and join the lobby
-  - `Publicadvertised`: Visible to everyone and joinable
-  - `Joinviapresence`: Joinable through friend presence
-  - `Inviteonly`: Only joinable via invite
-- **BucketId**: A filter string for grouping lobbies (useful for different game modes or versions)
-- **Attributes**: Custom key-value pairs for additional information and filtering
+**Configuration Parameters:**
+- **MaxNumLobbyMembers**: Maximum player capacity
+- **LobbyPermissionLevel**: Access control settings
+  - `Publicadvertised`: Publicly visible and joinable
+  - `Joinviapresence`: Accessible through friend presence
+  - `Inviteonly`: Requires explicit invitation
+- **BucketId**: Organizational identifier for grouping lobbies (e.g., game version, mode)
+- **Attributes**: Custom metadata for filtering and display purposes
 
-### Listing and Searching Lobbies
+### Searching for Lobbies
 
-EOS provides a powerful lobby search system. Here's how to list and filter lobbies:
+The lobby search system provides flexible filtering capabilities:
 
-#### Basic Lobby Listing (All Lobbies in Bucket)
-
+**Basic Search:**
 ```csharp
 var lobbyInterface = EOSManager.Instance.GetEOSLobbyInterface();
 
-// Create a search handle
 var searchOptions = new CreateLobbySearchOptions { MaxResults = 20 };
 lobbyInterface.CreateLobbySearch(ref searchOptions, out LobbySearch searchHandle);
 
-// Filter by bucket ID (recommended to separate game versions/modes)
 var bucketParam = new LobbySearchSetParameterOptions
 {
     Parameter = new AttributeData 
@@ -215,7 +275,6 @@ var bucketParam = new LobbySearchSetParameterOptions
 };
 searchHandle.SetParameter(ref bucketParam);
 
-// Execute the search
 var findOptions = new LobbySearchFindOptions 
 { 
     LocalUserId = EOSManager.Instance.GetProductUserId() 
@@ -230,12 +289,9 @@ searchHandle.Find(ref findOptions, null, (ref LobbySearchFindCallbackInfo data) 
 });
 ```
 
-#### Advanced Filtering (Search by Attributes)
-
-You can add multiple filters to narrow down results:
-
+**Advanced Filtering:**
 ```csharp
-// Search by lobby name
+// Filter by lobby name
 var nameParam = new LobbySearchSetParameterOptions
 {
     Parameter = new AttributeData 
@@ -247,7 +303,7 @@ var nameParam = new LobbySearchSetParameterOptions
 };
 searchHandle.SetParameter(ref nameParam);
 
-// Search by custom game mode attribute
+// Filter by custom attributes
 var modeParam = new LobbySearchSetParameterOptions
 {
     Parameter = new AttributeData 
@@ -259,7 +315,7 @@ var modeParam = new LobbySearchSetParameterOptions
 };
 searchHandle.SetParameter(ref modeParam);
 
-// Filter by available slots
+// Filter by available capacity
 var slotsParam = new LobbySearchSetParameterOptions
 {
     Parameter = new AttributeData 
@@ -272,10 +328,7 @@ var slotsParam = new LobbySearchSetParameterOptions
 searchHandle.SetParameter(ref slotsParam);
 ```
 
-#### Processing Search Results
-
-After a successful search, process the results:
-
+**Processing Results:**
 ```csharp
 private void ProcessSearchResults(LobbySearch search)
 {
@@ -290,33 +343,29 @@ private void ProcessSearchResults(LobbySearch search)
         
         if (search.CopySearchResultByIndex(ref indexOptions, out LobbyDetails details) == Result.Success)
         {
-            // Create a Lobby object from the details
             Lobby lobby = new Lobby();
             lobby.InitFromLobbyDetails(details);
             
-            // Access lobby information
             string lobbyId = lobby.Id;
             uint maxPlayers = lobby.MaxNumLobbyMembers;
             uint currentPlayers = (uint)lobby.Members.Count;
             
-            // Access custom attributes
             foreach (var attr in lobby.Attributes)
             {
                 if (attr.Key == "LOBBYNAME")
                 {
                     string lobbyName = attr.AsString;
-                    Debug.Log($"Found lobby: {lobbyName} ({currentPlayers}/{maxPlayers})");
+                    // Display or store lobby information
                 }
             }
             
-            // Store the LobbyDetails for joining later
-            // You need to keep this reference to join the lobby
+            // Retain LobbyDetails reference for joining
         }
     }
 }
 ```
 
-**Important**: Keep the `LobbyDetails` object returned from the search - you need it to join the lobby later. Don't forget to release the search handle when done:
+**Important**: Preserve the `LobbyDetails` object returned from search results - it is required for joining operations. Always release search handles after use:
 
 ```csharp
 searchHandle.Release();
@@ -324,7 +373,7 @@ searchHandle.Release();
 
 ### Joining Lobbies
 
-Once you have a lobby from search results:
+Join discovered lobbies using the stored `LobbyDetails` reference:
 
 ```csharp
 lobbyManager.JoinLobby(lobbyId, lobbyDetails, true, (result) =>
@@ -332,150 +381,101 @@ lobbyManager.JoinLobby(lobbyId, lobbyDetails, true, (result) =>
     if (result == Result.Success)
     {
         // Successfully joined lobby
+    }
+});
+```
+
+### Lobby Management Best Practices
+
+1. **Version Control**: Use BucketId to separate incompatible game versions
+   ```csharp
+   BucketId = Application.version
+   ```
+2. **Result Limiting**: Constrain search results to manageable quantities (10-20 initially)
+3. **Resource Management**: Always release search handles to prevent memory leaks
+4. **Reference Retention**: Store `LobbyDetails` from search results for joining operations
+5. **Meaningful Metadata**: Include relevant attributes (game mode, map, region, skill level)
+6. **Attribute Maintenance**: Update lobby attributes when state changes
+7. **Empty Result Handling**: Provide appropriate user feedback when searches return no results
+
+## Netick Integration
+
+After authentication and lobby setup, establish Netick connections using the EOS transport.
+
+### Connection Workflow
+
+**Host Setup:**
+```csharp
+lobbyManager.CreateLobby(newLobby, (result) =>
+{
+    if (result == Result.Success)
+    {
+        Network.StartAsHost(EOSTransportProvider, default, SandboxPrefab);
+    }
+});
+```
+
+The host may be started immediately after lobby creation or deferred based on game requirements (e.g., minimum player count, manual start trigger). Lobby creation and Netick host initialization are independent operations.
+
+**Client Setup:**
+```csharp
+lobbyManager.JoinLobby(lobbyId, lobbyDetails, true, (result) =>
+{
+    if (result == Result.Success)
+    {
         var client = Network.StartAsClient(EOSTransportProvider, default, SandboxPrefab);
+        
         string hostId = lobbyManager.GetCurrentLobby().LobbyOwner.ToString();
         client.Connect(default, hostId);
     }
 });
 ```
 
-### Best Practices for Lobby Search
+**Critical**: The connection string must be the lobby owner's `ProductUserId` (converted to string). This identifier enables the EOS transport to establish connections with the correct peer. The lobby owner's ID is accessible via `lobby.LobbyOwner` after successful lobby join operations.
 
-1. **Always use BucketId**: Use your game version or a mode identifier as the bucket ID to prevent version mismatches
-   ```csharp
-   BucketId = Application.version // or Network.GameVersion.ToString()
-   ```
-2. **Limit search results**: Don't retrieve more than you can display. Start with 10-20 results.
-3. **Release search handles**: Always call `searchHandle.Release()` when done to free memory.
-4. **Store LobbyDetails**: Keep the `LobbyDetails` reference from search results - you need it to join the lobby.
-5. **Add meaningful attributes**: Include searchable attributes like game mode, map, skill level, region, etc.
-6. **Update lobby attributes**: If lobby state changes (like available slots), update attributes so searches remain accurate.
-7. **Handle empty results gracefully**: Always check if search returned zero results and provide feedback to the user.
+## Important Considerations
 
-## Authentication
-
-EOS provides two main authentication flows:
-
-### 1. Device ID Authentication
-
-Device ID creates a hardware-tied persistent identity without requiring an Epic Games account. This is the simplest method for testing and works well for mobile or standalone applications.
-
-**Implementation Example:**
-```csharp
-EOSManager.Instance.StartConnectLoginWithDeviceToken("User", (connectInfo) =>
-{
-    if (connectInfo.ResultCode == Result.Success)
-    {
-        // Successfully authenticated
-    }
-});
-```
-
-### 2. Epic Account Authentication
-
-Epic Account authentication uses Epic Games accounts and supports multiple credential types:
-
-**Available Credential Types:**
-- **Developer (DevAuthTool)**: For local development and testing. Requires the DevAuthTool running locally.
-- **AccountPortal**: Opens a browser for user login with their Epic Games account.
-- **ExchangeCode**: Uses a one-time exchange code (typically from Epic Games Launcher).
-- **PersistentAuth**: Uses cached credentials from a previous login.
-- **Password**: Direct username/password login (requires special permissions).
-- **ExternalAuth**: Login via external platforms (Steam, PlayStation, Xbox, etc.).
-
-**Implementation Example (Developer/DevAuthTool):**
-```csharp
-var credentials = new Epic.OnlineServices.Auth.Credentials 
-{ 
-    Type = Epic.OnlineServices.Auth.LoginCredentialType.Developer,
-    Id = "localhost:8888",  // DevAuthTool address
-    Token = "YourDevUsername"  // Username from DevAuthTool
-};
-
-var loginOptions = new Epic.OnlineServices.Auth.LoginOptions()
-{
-    Credentials = credentials,
-    ScopeFlags = Epic.OnlineServices.Auth.AuthScopeFlags.BasicProfile
-};
-
-EOSManager.Instance.GetEOSAuthInterface().Login(ref loginOptions, null, (authCallback) =>
-{
-    if (authCallback.ResultCode == Result.Success)
-    {
-        // After Epic Account auth, connect to EOS
-        EOSManager.Instance.StartConnectLoginWithEpicAccount(authCallback.LocalUserId, (connectInfo) =>
-        {
-            if (connectInfo.ResultCode == Result.Success)
-            {
-                // Successfully authenticated and connected
-            }
-        });
-    }
-});
-```
-
-**Note**: Epic Account authentication is a two-step process: first authenticate with Epic Account Services, then connect to EOS with the resulting credentials.
-
-### Local Testing with Multiple Unity Instances
-
-**Important**: EOS does not allow multiple logins using the same account or Device ID. To test locally with multiple Unity instances, you must use different authentication methods for each instance:
-
-**Recommended Setup for Local Testing:**
-- **First Instance**: Use Device ID authentication
-- **Second Instance**: Use Epic Account authentication with DevAuthTool
-
-**Setting Up DevAuthTool:**
-1. Download the DevAuthTool from the [Epic Online Services documentation](https://dev.epicgames.com/docs/epic-account-services/developer-authentication-tool)
-2. Run the tool and login with your Epic Games account
-3. The tool will display credentials (e.g., `localhost:8888` with a username)
-4. In your second game instance, select Developer login type and enter:
-   - **ID/Address**: The address shown by DevAuthTool (e.g., `localhost:8888`)
-   - **Token**: Your chosen username from DevAuthTool
-
-This allows you to run two instances on the same machine with different EOS identities, enabling proper local multiplayer testing.
-
-**Production Considerations:**
-- For production builds, use **AccountPortal** or **ExternalAuth** for the best user experience
-- Device ID is suitable for mobile games or applications where Epic accounts aren't required
-- Developer authentication should only be used during development
-
-## Important Notes
-
-- Ensure your EOS application is properly configured before testing
-- Lobby attributes can be customized for matchmaking and filtering
-- Connection quality depends on relay server locations and player proximity
-- Always release search handles after use to prevent memory leaks
-- Use BucketId to version-separate lobbies and avoid compatibility issues
+- Ensure EOS application configuration is correct before testing
+- Authentication is required before accessing lobby functionality
+- Lobby attributes enable custom matchmaking and filtering logic
+- Connection quality depends on relay server proximity and network conditions
+- BucketId should be used to prevent version incompatibility issues
 
 ## Troubleshooting
 
-### Common Issues
-
-**"Failed to initialize EOS"**
+### EOS Initialization Failures
 - Verify your Product Name, Product ID, Sandbox ID, Client ID, and Client Secret are correct
 - Ensure the EOS Plugin is properly installed
 - Check that your client policy includes the necessary permissions
 
-**"Cannot create/join lobby"**
+### Authentication Issues
+- **Device ID**: Ensure unique credentials per instance
+- **Epic Account**: Verify DevAuthTool is running (for Developer credential type)
+- Confirm credential accuracy
+- Validate client policy authentication permissions
+
+### Lobby Issues
 - Confirm you're logged into EOS successfully
 - Verify your sandbox is correctly configured
 - Check that lobby permissions are enabled in your client policy
 
-**"Connection timeout"**
-- Ensure both clients are authenticated with EOS
-- Verify P2P networking is enabled in your client policy
-- Check firewall settings aren't blocking EOS connections
+### Connection Problems
+- Ensure both peers are authenticated
+- Verify P2P networking permissions in client policy
+- Check firewall configuration
+- Confirm correct ProductUserId usage in connection string
 
-**"No lobbies found in search"**
+### Lobby Search Issues
 - Verify you're searching the correct BucketId
 - Check that lobbies exist with `LobbyPermissionLevel.Publicadvertised`
 - Ensure you're authenticated before searching
 - Try searching without filters to see all available lobbies
 
-## Help
 
-For issues related to the EOS C# SDK or Unity plugin itself, please open an issue on the [EOS Plugin for Unity repository](https://github.com/EOS-Contrib/eos_plugin_for_unity).
+## Support Resources
 
-For Netick-related questions, join our [discord server](https://discord.com/invite/uV6bfG66Fx).
+For EOS Plugin or Unity-specific issues: [EOS Plugin for Unity Repository](https://github.com/EOS-Contrib/eos_plugin_for_unity)
 
-For EOS-specific issues or information, read the [Epic Online Services documentation](https://dev.epicgames.com/docs/epic-online-services).
+For Netick-related questions: [Discord Server](https://discord.com/invite/uV6bfG66Fx)
+
+For EOS platform documentation: [Epic Online Services Documentation](https://dev.epicgames.com/docs/epic-online-services)
