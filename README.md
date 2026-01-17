@@ -155,16 +155,6 @@ EOS provides two main authentication flows:
 
 Device ID creates a hardware-tied persistent identity without requiring an Epic Games account. This is the simplest method for testing and works well for mobile or standalone applications.
 
-**Pros:**
-- No Epic Games account required
-- Automatic and seamless for users
-- Good for prototyping and testing
-
-**Cons:**
-- Tied to specific hardware
-- Cannot be transferred between devices
-- Limited cross-platform support
-
 **Implementation:**
 ```csharp
 EOSManager.Instance.StartConnectLoginWithDeviceToken("User", (connectInfo) =>
