@@ -345,17 +345,11 @@ lobbyManager.JoinLobby(lobbyId, lobbyDetails, true, (result) =>
    ```csharp
    BucketId = Application.version // or Network.GameVersion.ToString()
    ```
-
 2. **Limit search results**: Don't retrieve more than you can display. Start with 10-20 results.
-
 3. **Release search handles**: Always call `searchHandle.Release()` when done to free memory.
-
 4. **Store LobbyDetails**: Keep the `LobbyDetails` reference from search results - you need it to join the lobby.
-
 5. **Add meaningful attributes**: Include searchable attributes like game mode, map, skill level, region, etc.
-
 6. **Update lobby attributes**: If lobby state changes (like available slots), update attributes so searches remain accurate.
-
 7. **Handle empty results gracefully**: Always check if search returned zero results and provide feedback to the user.
 
 ## Authentication
