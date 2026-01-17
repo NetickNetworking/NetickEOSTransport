@@ -18,7 +18,7 @@ This package and its dependencies can be installed via Unity Package Manager usi
 
 ### Installing from Git
 
-All dependencies can be installed via Unity Package Manager using Git URLs. For detailed instructions on installing packages from Git repositories, see the [Unity documentation on installing from a Git URL](https://docs.unity3d.com/6000.2/Documentation/Manual/upm-ui-giturl.html).
+All dependencies can be installed via Unity Package Manager using Git URLs. For detailed instructions on installing packages from Git repositories, see the [Unity documentation on installing from a Git URL](https://docs.unity3d.com/6000.0/Documentation/Manual/upm-ui-giturl.html).
 
 **Quick Installation Steps:**
 
