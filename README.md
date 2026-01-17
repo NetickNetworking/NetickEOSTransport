@@ -211,9 +211,9 @@ EOSManager.Instance.GetEOSAuthInterface().Login(ref loginOptions, null, (authCal
 
 **Note**: Epic Account authentication is a two-step process: first authenticate with Epic Account Services, then connect to EOS with the resulting credentials.
 
-### Local Testing with Multiple Instances
+### Local Testing with Multiple Unity Instances
 
-**Important**: EOS does not allow multiple logins using the same account or Device ID. To test locally with multiple game instances, you must use different authentication methods for each instance:
+**Important**: EOS does not allow multiple logins using the same account or Device ID. To test locally with multiple Unity instances, you must use different authentication methods for each instance:
 
 **Recommended Setup for Local Testing:**
 - **First Instance**: Use Device ID authentication
