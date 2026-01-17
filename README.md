@@ -19,7 +19,21 @@ This package requires the following to be installed manually:
 
 1. Install the EOS Plugin for Unity first
 2. Install Netick for Unity
-3. Install this transport package
+3. Install this package
+
+### Installing Packages from Git
+
+All dependencies can be installed via Unity Package Manager using Git URLs. For detailed instructions on installing packages from Git repositories, see the [Unity documentation on installing from a Git URL](https://docs.unity3d.com/6000.2/Documentation/Manual/upm-ui-giturl.html).
+
+**Quick Installation Steps:**
+
+1. Open Unity Package Manager (Window > Package Manager)
+2. Click the **+** button in the top-left corner
+3. Select **Add package from git URL...**
+4. Enter the Git URL for each package:
+   - EOS Plugin: `https://github.com/EOS-Contrib/eos_plugin_for_unity_upm.git`
+   - Netick for Unity: `https://github.com/NetickNetworking/NetickForUnity.git`
+5. Click **Add**
 
 ## Epic Online Services Setup
 
