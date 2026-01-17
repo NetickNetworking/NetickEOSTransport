@@ -472,10 +472,6 @@ This allows you to run two instances on the same machine with different EOS iden
 - Ensure you're authenticated before searching
 - Try searching without filters to see all available lobbies
 
-**"Search handle memory leak"**
-- Always call `searchHandle.Release()` after processing results
-- Don't create multiple search handles without releasing previous ones
-
 ## Help
 
 For issues related to the EOS C# SDK or Unity plugin itself, please open an issue on the [EOS Plugin for Unity repository](https://github.com/EOS-Contrib/eos_plugin_for_unity).
