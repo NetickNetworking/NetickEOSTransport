@@ -123,4 +123,4 @@ For issues related to the EOS C# SDK or Unity plugin itself, please open an issu
 
 For Netick-related questions, join our [discord server](https://discord.com/invite/uV6bfG66Fx).
 
-For EOS-specific issues or information, read the [Epic Online Services documentation](https://dev.epicgames.com/docs/services/en-US/index.html).
+For EOS-specific issues or information, read the [Epic Online Services documentation](https://dev.epicgames.com/docs/epic-online-services).
