@@ -147,6 +147,217 @@ lobbyManager.JoinLobby(lobbyId, lobbyDetails, true, (result) =>
 
 **Important**: The connection string passed to `client.Connect()` must be the **lobby owner's ProductUserId** (converted to string). This is how the EOS transport identifies which peer to establish a P2P connection with. The lobby owner's ID is automatically available through `lobby.LobbyOwner` after successfully joining a lobby.
 
+## Lobby Management
+
+### Creating Lobbies
+
+To create a lobby, configure a `Lobby` object with your desired settings and use the `EOSLobbyManager`:
+
+```csharp
+Lobby newLobby = new Lobby
+{
+    MaxNumLobbyMembers = 4,
+    LobbyPermissionLevel = LobbyPermissionLevel.Publicadvertised,
+    BucketId = "DefaultBucket", // Used for filtering lobbies
+    PresenceEnabled = true,
+    RTCRoomEnabled = false,
+    AllowInvites = true
+};
+
+// Add custom attributes for filtering and display
+newLobby.Attributes.Add(new LobbyAttribute 
+{ 
+    Key = "LOBBYNAME", 
+    AsString = "My Game Lobby", 
+    Visibility = LobbyAttributeVisibility.Public 
+});
+
+lobbyManager.CreateLobby(newLobby, (result) =>
+{
+    if (result == Result.Success)
+    {
+        // Lobby created successfully
+    }
+});
+```
+
+**Key Settings:**
+- **MaxNumLobbyMembers**: Maximum number of players allowed
+- **LobbyPermissionLevel**: Controls who can see and join the lobby
+  - `Publicadvertised`: Visible to everyone and joinable
+  - `Joinviapresence`: Joinable through friend presence
+  - `Inviteonly`: Only joinable via invite
+- **BucketId**: A filter string for grouping lobbies (useful for different game modes or versions)
+- **Attributes**: Custom key-value pairs for additional information and filtering
+
+### Listing and Searching Lobbies
+
+EOS provides a powerful lobby search system. Here's how to list and filter lobbies:
+
+#### Basic Lobby Listing (All Lobbies in Bucket)
+
+```csharp
+var lobbyInterface = EOSManager.Instance.GetEOSLobbyInterface();
+
+// Create a search handle
+var searchOptions = new CreateLobbySearchOptions { MaxResults = 20 };
+lobbyInterface.CreateLobbySearch(ref searchOptions, out LobbySearch searchHandle);
+
+// Filter by bucket ID (recommended to separate game versions/modes)
+var bucketParam = new LobbySearchSetParameterOptions
+{
+    Parameter = new AttributeData 
+    { 
+        Key = "bucket", 
+        Value = new AttributeDataValue { AsUtf8 = "DefaultBucket" } 
+    },
+    ComparisonOp = ComparisonOp.Equal
+};
+searchHandle.SetParameter(ref bucketParam);
+
+// Execute the search
+var findOptions = new LobbySearchFindOptions 
+{ 
+    LocalUserId = EOSManager.Instance.GetProductUserId() 
+};
+
+searchHandle.Find(ref findOptions, null, (ref LobbySearchFindCallbackInfo data) =>
+{
+    if (data.ResultCode == Result.Success)
+    {
+        ProcessSearchResults(searchHandle);
+    }
+});
+```
+
+#### Advanced Filtering (Search by Attributes)
+
+You can add multiple filters to narrow down results:
+
+```csharp
+// Search by lobby name
+var nameParam = new LobbySearchSetParameterOptions
+{
+    Parameter = new AttributeData 
+    { 
+        Key = "LOBBYNAME", 
+        Value = new AttributeDataValue { AsUtf8 = "Specific Lobby Name" } 
+    },
+    ComparisonOp = ComparisonOp.Equal
+};
+searchHandle.SetParameter(ref nameParam);
+
+// Search by custom game mode attribute
+var modeParam = new LobbySearchSetParameterOptions
+{
+    Parameter = new AttributeData 
+    { 
+        Key = "GAMEMODE", 
+        Value = new AttributeDataValue { AsUtf8 = "DeathMatch" } 
+    },
+    ComparisonOp = ComparisonOp.Equal
+};
+searchHandle.SetParameter(ref modeParam);
+
+// Filter by available slots
+var slotsParam = new LobbySearchSetParameterOptions
+{
+    Parameter = new AttributeData 
+    { 
+        Key = "AVAILABLESLOTS", 
+        Value = new AttributeDataValue { AsInt64 = 1 } 
+    },
+    ComparisonOp = ComparisonOp.Greaterthanorequal
+};
+searchHandle.SetParameter(ref slotsParam);
+```
+
+#### Processing Search Results
+
+After a successful search, process the results:
+
+```csharp
+private void ProcessSearchResults(LobbySearch search)
+{
+    var countOptions = new LobbySearchGetSearchResultCountOptions();
+    uint count = search.GetSearchResultCount(ref countOptions);
+    
+    var indexOptions = new LobbySearchCopySearchResultByIndexOptions();
+    
+    for (uint i = 0; i < count; i++)
+    {
+        indexOptions.LobbyIndex = i;
+        
+        if (search.CopySearchResultByIndex(ref indexOptions, out LobbyDetails details) == Result.Success)
+        {
+            // Create a Lobby object from the details
+            Lobby lobby = new Lobby();
+            lobby.InitFromLobbyDetails(details);
+            
+            // Access lobby information
+            string lobbyId = lobby.Id;
+            uint maxPlayers = lobby.MaxNumLobbyMembers;
+            uint currentPlayers = (uint)lobby.Members.Count;
+            
+            // Access custom attributes
+            foreach (var attr in lobby.Attributes)
+            {
+                if (attr.Key == "LOBBYNAME")
+                {
+                    string lobbyName = attr.AsString;
+                    Debug.Log($"Found lobby: {lobbyName} ({currentPlayers}/{maxPlayers})");
+                }
+            }
+            
+            // Store the LobbyDetails for joining later
+            // You need to keep this reference to join the lobby
+        }
+    }
+}
+```
+
+**Important**: Keep the `LobbyDetails` object returned from the search - you need it to join the lobby later. Don't forget to release the search handle when done:
+
+```csharp
+searchHandle.Release();
+```
+
+### Joining Lobbies
+
+Once you have a lobby from search results:
+
+```csharp
+lobbyManager.JoinLobby(lobbyId, lobbyDetails, true, (result) =>
+{
+    if (result == Result.Success)
+    {
+        // Successfully joined lobby
+        var client = Network.StartAsClient(EOSTransportProvider, default, SandboxPrefab);
+        string hostId = lobbyManager.GetCurrentLobby().LobbyOwner.ToString();
+        client.Connect(default, hostId);
+    }
+});
+```
+
+### Best Practices for Lobby Search
+
+1. **Always use BucketId**: Use your game version or a mode identifier as the bucket ID to prevent version mismatches
+   ```csharp
+   BucketId = Application.version // or Network.GameVersion.ToString()
+   ```
+
+2. **Limit search results**: Don't retrieve more than you can display. Start with 10-20 results.
+
+3. **Release search handles**: Always call `searchHandle.Release()` when done to free memory.
+
+4. **Store LobbyDetails**: Keep the `LobbyDetails` reference from search results - you need it to join the lobby.
+
+5. **Add meaningful attributes**: Include searchable attributes like game mode, map, skill level, region, etc.
+
+6. **Update lobby attributes**: If lobby state changes (like available slots), update attributes so searches remain accurate.
+
+7. **Handle empty results gracefully**: Always check if search returned zero results and provide feedback to the user.
+
 ## Authentication
 
 EOS provides two main authentication flows:
@@ -239,6 +450,8 @@ This allows you to run two instances on the same machine with different EOS iden
 - Ensure your EOS application is properly configured before testing
 - Lobby attributes can be customized for matchmaking and filtering
 - Connection quality depends on relay server locations and player proximity
+- Always release search handles after use to prevent memory leaks
+- Use BucketId to version-separate lobbies and avoid compatibility issues
 
 ## Troubleshooting
 
@@ -258,6 +471,16 @@ This allows you to run two instances on the same machine with different EOS iden
 - Ensure both clients are authenticated with EOS
 - Verify P2P networking is enabled in your client policy
 - Check firewall settings aren't blocking EOS connections
+
+**"No lobbies found in search"**
+- Verify you're searching the correct BucketId
+- Check that lobbies exist with `LobbyPermissionLevel.Publicadvertised`
+- Ensure you're authenticated before searching
+- Try searching without filters to see all available lobbies
+
+**"Search handle memory leak"**
+- Always call `searchHandle.Release()` after processing results
+- Don't create multiple search handles without releasing previous ones
 
 ## Help
 
