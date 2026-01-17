@@ -1,0 +1,17 @@
+{
+  "name": "com.karrar.netickeostransport",
+  "version": "0.7.0",
+  "displayName": "Netick EOS Transport",
+  "description": "EOS Transport for Netick.",
+  "unity": "2021.3",
+  "keywords": [
+    "networking",
+    "multiplayer",
+    "online"
+  ],
+  "author": {
+    "name": "Karrar Rahim",
+    "email": "karsoftgames@gmail.com",
+    "url": "https://www.netick.net"
+  }
+}
