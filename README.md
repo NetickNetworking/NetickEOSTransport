@@ -1,7 +1,7 @@
 # Netick EOS Transport
 
-<img width="1260" height="709" alt="image" src="https://github.com/user-attachments/assets/8c7734ae-5235-4949-8f17-7f3d3d530335" />
-<img width="1272" height="705" alt="image" src="https://github.com/user-attachments/assets/7364b2b4-db78-47d4-95f3-b29ec59eb6ad" />
+<img width="630" height="354" alt="image" src="https://github.com/user-attachments/assets/8c7734ae-5235-4949-8f17-7f3d3d530335" />
+<img width="636" height="352" alt="image" src="https://github.com/user-attachments/assets/7364b2b4-db78-47d4-95f3-b29ec59eb6ad" />
 
 A transport integration for [Netick](https://github.com/NetickNetworking/NetickForUnity) that enables networking through Epic Online Services (EOS) relay servers and lobbies.
 
