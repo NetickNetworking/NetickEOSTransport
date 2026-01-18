@@ -183,11 +183,11 @@ EOSManager.Instance.GetEOSAuthInterface().Login(ref loginOptions, null, (authCal
 
 **Note**: Epic Account authentication requires two steps: first authenticate with Epic Account Services, then connect to EOS using the resulting credentials.
 
-### Local Testing with Multiple Instances
+### Local Testing with Multiple Unity Instances
 
-EOS does not permit multiple simultaneous logins using identical credentials or Device IDs. For local testing with multiple Unity instances, use different authentication methods for each instance:
+For proper local testing of the lobby system, you need two distinct authenticated users. This is because a user who creates a lobby cannot join that same lobby as a client - you need separate identities to test the host-client relationship.
 
-**Recommended Configuration:**
+**Recommended Configuration for Local Testing:**
 - **Instance 1 (Host)**: Device ID authentication
 - **Instance 2 (Client)**: Epic Account authentication with DevAuthTool
 
@@ -200,7 +200,7 @@ EOS does not permit multiple simultaneous logins using identical credentials or 
    - **ID**: Address from DevAuthTool (e.g., `localhost:8888`)
    - **Token**: Username from DevAuthTool
 
-This configuration enables proper local multiplayer testing with distinct EOS identities on a single machine.
+This configuration provides two distinct EOS identities on a single machine, enabling you to properly test lobby creation (with one user) and lobby joining (with another user).
 
 ### Authentication for Production
 
@@ -449,7 +449,7 @@ lobbyManager.JoinLobby(lobbyId, lobbyDetails, true, (result) =>
 - Check that your client policy includes the necessary permissions
 
 ### Authentication Issues
-- **Device ID**: Ensure unique credentials per instance
+- **Device ID**: Ensure unique credentials per instance for proper testing
 - **Epic Account**: Verify DevAuthTool is running (for Developer credential type)
 - Confirm credential accuracy
 - Validate client policy authentication permissions
