@@ -1,4 +1,4 @@
-# EOS Transport for Netick
+# Epic Online Services (EOS) Transport for Netick
 
 An Epic Online Services (EOS) integration for Netick, featuring support for relays and lobbies. Built on [EOS Plugin for Unity](https://github.com/EOS-Contrib/eos_plugin_for_unity_upm) - refer to its documentation to integrate additional EOS services.
 
@@ -70,6 +70,9 @@ Once the EOS Plugin for Unity is installed:
   - **Client ID**
   - **Client Secret**
 - Save the configuration
+
+> [!NOTE]
+> Please note that 'Sandbox' refers here to an EOS-specific concept and is distinct from the sandbox terminology used in Netick
 
 ## Transport Setup
 
