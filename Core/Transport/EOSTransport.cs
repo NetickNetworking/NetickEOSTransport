@@ -144,16 +144,6 @@ namespace NetickEOSTransport
     public override void Run(RunMode mode, int port)
     {
       _isServer = mode == RunMode.Server;
-      switch (mode)
-      {
-        case RunMode.Server:
-          _isServer = true;
-          break;
-
-        case RunMode.Client:
-          _isServer = false;
-          break;
-      }
     }
 
     public override void Connect(string address, int port, byte[] connectionData, int connectionDataLen)
@@ -339,7 +329,7 @@ namespace NetickEOSTransport
     }
 
     /// <summary>
-    /// Gets the ProductUserId for an associated transportId.
+    /// Gets the ProductUserId for an associated transportConnectionId.
     /// </summary>
     public ProductUserId GetUserId(ulong transportConnectionId)
     {
